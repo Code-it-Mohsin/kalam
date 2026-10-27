@@ -16,7 +16,10 @@ import {
 // deliberately expensive, which makes this endpoint cheap to abuse.
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null); // malformed JSON -> null -> fails validation
+
+  // Unlike Express's express.json() middleware, Next.js requires request.json() to parse the body; catch malformed/typos JSON to prevent an unhandled error.
+  const body = await request.json().catch(() => null); 
+
   const parsed = signupSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -37,11 +40,8 @@ export async function POST(request: NextRequest) {
     setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
     return response;
   } catch (error) {
-    // Relying on the DB unique constraint (not check-then-insert) is correct:
-    // it is race-free.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      // Trade-off: this reveals that an email is registered. Acceptable for
-      // most apps; the strict alternative is "check your email" for both cases.
+
       return NextResponse.json(
         { error: "An account with that email already exists" },
         { status: 409 },

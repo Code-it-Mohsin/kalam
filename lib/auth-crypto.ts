@@ -18,7 +18,7 @@ Refresh Token - Regenerate Access Token when it expires
 const secret = process.env.ACCESS_TOKEN_SECRET
 
 if (!secret || secret.length < 32) {
-    throw new Error("Access token configured is invalid")
+	throw new Error("Access token configured is invalid")
 }
 
 // => convert the secret into bytes, algorithyms run of byte not on strings
@@ -30,68 +30,68 @@ const AUDIENCE = "kalam-api"
 
 // func to hash the argon2 password
 export async function hashPassword(password: string) {
-    return await argon2.hash(password)
+	return await argon2.hash(password)
 }
 
 // DUMMY PASSWORD
 export function getDummy() {
-    return argon2.hash(randomBytes(12).toString("hex"))
+	return argon2.hash(randomBytes(12).toString("hex"))
 }
 
 // VERIFY PASSWORD
 export async function verifyPassword(hashPassFromDB: string | null | undefined, password: string) {
-    try {
-        if (!hashPassFromDB) {
-            let dummyPass = await getDummy()
-            await argon2.verify(dummyPass, password)
-            return false
-        } // intentional delay for empty passwords
-        return await argon2.verify(hashPassFromDB, password)
+	try {
+		if (!hashPassFromDB) {
+			let dummyPass = await getDummy()
+			await argon2.verify(dummyPass, password)
+			return false
+		} // intentional delay for empty passwords
+		return await argon2.verify(hashPassFromDB, password)
 
-    }
-    catch (error) { return false }
+	}
+	catch (error) { return false }
 }
 
 // CREATE ACCESS TOKEN
 export async function createAccessToken(userId: string, sidFromLogin: string) {
-    return new SignJWT({sid: sidFromLogin}) // creating token using session Id for multiple sessions can have different access Token
-        .setProtectedHeader({alg: "HS256"})
-        .setSubject(userId)
-        .setIssuer(ISSUER)
-        .setAudience(AUDIENCE)
-        .setIssuedAt()
-        .setExpirationTime(process.env.TTL_SEC_ACCESS_TOKENS!)
-        .sign(secretBytes)
+	return new SignJWT({ sid: sidFromLogin }) // creating token using session Id for multiple sessions can have different access Token
+		.setProtectedHeader({ alg: "HS256" })
+		.setSubject(userId)
+		.setIssuer(ISSUER)
+		.setAudience(AUDIENCE)
+		.setIssuedAt()
+		.setExpirationTime(process.env.TTL_SEC_ACCESS_TOKENS!)
+		.sign(secretBytes)
 }
 
 // VERIFY ACCESS TOKEN
-export async function verifyAccessToken(token:string) {
-    try {
-    const {payload} = await jwtVerify(token, secretBytes, {
-        algorithms: ["HS256"],
-        issuer: ISSUER,
-        audience: AUDIENCE,
-    })
-    if(!payload.sub) return null
+export async function verifyAccessToken(token: string) {
+	try {
+		const { payload } = await jwtVerify(token, secretBytes, {
+			algorithms: ["HS256"],
+			issuer: ISSUER,
+			audience: AUDIENCE,
+		})
+		if (!payload.sub) return null
 
-    return {
-        userId: payload.sub,
-        sessionId: typeof payload.sid === "string" ? payload.sid : null, 
-    }
-    } catch (error) {
-        console.log(error)
-        return null
-    }
+		return {
+			userId: payload.sub,
+			sessionId: typeof payload.sid === "string" ? payload.sid : null,
+		}
+	} catch (error) {
+		console.log(error)
+		return null
+	}
 }
 
 // CREATING REFRESH TOKEN
-export async function createRefreshToken(){
-    return randomBytes(32).toString("base64url")
+export async function createRefreshToken() {
+	return randomBytes(32).toString("base64url")
 }
 
 // HASH REFRESH TOKEN
-export async function hashRefreshToken(token: string){
-    return createHash("sha256").update(token).digest("hex");
+export async function hashRefreshToken(token: string) {
+	return createHash("sha256").update(token).digest("hex");
 }
 
 /*

@@ -16,6 +16,7 @@ import {
   getGoogleConfig,
   readOAuthCookies,
 } from "@/lib/google-oauth";
+
 import { findOrCreateUserForGoogle } from "@/lib/account-linking";
 import {
   createLoginSession,
@@ -23,12 +24,11 @@ import {
   setAuthCookies,
 } from "@/lib/auth-session";
 
+// GET REQUEST COMING FROM THE BROWSER WITH GOOGLE'S CODE
 export async function GET(request: NextRequest) {
   const appUrl = getAppUrl(request);
 
-  // IMPROVED: one `fail()` replaces six copy-pasted "redirect + clear cookies"
-  // blocks. Every failure looks identical to the user (?error=google) and the
-  // one-time OAuth cookies are always cleared.
+  // declared here as the url is currently in this scope
   const fail = () => {
     const response = NextResponse.redirect(new URL("/signin?error=google", appUrl));
     clearOAuthCookies(response);
