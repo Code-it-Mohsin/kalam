@@ -26,10 +26,8 @@ export async function POST(request: NextRequest) {
   const { email, password } = parsed.data;
   const user = await db.user.findUnique({ where: { email } });
 
-  // IMPROVED: verifyPassword is ALWAYS awaited, even when the user is missing
-  // or Google-only (passwordHash null). It runs a dummy hash in that case, so
-  // response time doesn't reveal whether the email exists. The old
-  // short-circuit `!user?.passwordHash ||` skipped hashing entirely.
+  // DATABASE OR SESSION ERRORS ARE NOT CAUGHT CURRENTLY
+      
   const valid = await verifyPassword(user?.passwordHash, password);
 
   if (!user || !valid) {

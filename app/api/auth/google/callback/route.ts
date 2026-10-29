@@ -64,6 +64,9 @@ export async function GET(request: NextRequest) {
     setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
     return response;
   } catch (error) {
+
+    // ADD REDIRECT TO THE SIGN IN PAGE
+
     console.error("Google sign-in failed:", error); // IMPROVED: errors were swallowed
     return fail();
   }

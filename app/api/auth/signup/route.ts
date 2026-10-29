@@ -23,15 +23,17 @@ export async function POST(request: NextRequest) {
   const parsed = signupSchema.safeParse(body);
 
   if (!parsed.success) {
+    console.log("invalid details")
     return NextResponse.json({ error: "Invalid signup details" }, { status: 400 });
   }
 
   const { name, email, password } = parsed.data;
 
   try {
+    console.log("Creating user in db ")
     const user = await db.user.create({
       data: { name, email, passwordHash: await hashPassword(password) },
-      select: { id: true, name: true, email: true }, // never return passwordHash
+      select: { id: true, name: true, email: true }, 
     });
 
     const tokens = await createLoginSession(user.id, getRequestMetadata(request));
@@ -41,6 +43,8 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      
+      // HANDLE WITH AN EXPLICIT ACCOUNT/SESSION RECOVERY STRATEGY
 
       return NextResponse.json(
         { error: "An account with that email already exists" },
@@ -48,8 +52,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // IMPROVED: log the real error server-side. The old code logged a fixed
-    // string, which makes production failures impossible to debug.
     console.error("Signup failed:", error);
     return NextResponse.json({ error: "Unable to create account" }, { status: 500 });
   }

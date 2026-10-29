@@ -60,8 +60,10 @@ export async function createAccessToken(userId: string, sidFromLogin: string) {
 		.setIssuer(ISSUER)
 		.setAudience(AUDIENCE)
 		.setIssuedAt()
-		.setExpirationTime(process.env.TTL_SEC_ACCESS_TOKENS!)
-		.sign(secretBytes)
+		.setExpirationTime(
+			Math.floor(Date.now() / 1000) +
+			Number(process.env.TTL_SEC_ACCESS_TOKENS ?? 900)
+		).sign(secretBytes)
 }
 
 // VERIFY ACCESS TOKEN

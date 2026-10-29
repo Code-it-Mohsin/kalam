@@ -106,7 +106,7 @@ export type RotateResult =
   | { ok: false; reason: "invalid" | "reused" | "concurrent" }
 
 // "kill the whole session" helper: it revokes the session and all its tokens.
-async function revokeSessionTree(
+export async function revokeSessionTree(
   tx: Prisma.TransactionClient,
   sessionId: string,
   now: Date,
@@ -180,6 +180,23 @@ export async function rotateRefreshToken(rawToken: string): Promise<RotateResult
       sessionId: session.id,
       refreshToken: nextToken,
     }
+  })
+}
+
+export async function revokeAllUserSessions(userId: string) {
+  const now = new Date()
+
+  await db.$transaction(async (tx) => {
+    const sessions = await tx.session.findMany({
+      where: { userId, revokedAt: null },
+      select: { id: true },
+    })
+
+    await Promise.all(
+      sessions.map((session: any) =>
+        revokeSessionTree(tx, session.id, now)
+      )
+    )
   })
 }
 //
