@@ -7,30 +7,67 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PostVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+// ─────────────────────────────────────────────
+// USER & AUTHENTICATION
+// ─────────────────────────────────────────────
+
 model User {
   id           String   @id @default(cuid())
+  name         String?  @unique
+  username     String   @unique
   email        String   @unique
-  name         String?
   image        String?
-  passwordHash String? // null for Google-only users
+  passwordHash String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   accounts Account[]
   sessions Session[]
+  settings UserSettings?
+
+  posts     Post[]           @relation("PostAuthor")
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
+  history   ReadingHistory[]
+  views     PostView[]
+
+  @@map("users") // name of the database
 }
 
 model Account {
-  id                String @id @default(cuid())
+  id                String   @id @default(cuid())
   userId            String
-  provider          String // "google"
-  providerAccountId String // Google's stable `sub`
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Gives the `provider_providerAccountId` lookup used in account-linking.ts
   @@unique([provider, providerAccountId])
   @@index([userId])
+  @@map("accounts")
 }
 
 model Session {
@@ -46,6 +83,8 @@ model Session {
   refreshTokens RefreshToken[]
 
   @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 model RefreshToken {
@@ -60,4 +99,167 @@ model RefreshToken {
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// USER SETTINGS
+// ─────────────────────────────────────────────
+
+model UserSettings {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  theme              Theme    @default(SYSTEM)
+  emailNotifications Boolean  @default(true)
+  preferences        Json?
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ─────────────────────────────────────────────
+// POSTS & SUBJECTS
+// ─────────────────────────────────────────────
+
+model Post {
+  id          String         @id @default(cuid())
+  authorId    String
+  title       String
+  slug        String         @unique
+  excerpt     String?
+  content     String         @db.Text
+  coverImage  String?
+  status      PostStatus     @default(DRAFT)
+  visibility  PostVisibility @default(PUBLIC)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  publishedAt DateTime?
+
+  author    User             @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  /**
+   * author User → This post has an author, and that author is a record in the User model.
+   * @relation("PostAuthor") → Give this relationship the name PostAuthor.
+   * fields: [authorId] → Use the authorId field in the Post model to store the author's ID.
+   * references: [id] → That ID must match the id field of a record in the User model.
+   */
+  subjects  Subject[]
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
+  history   ReadingHistory[]
+  views     PostView[]
+
+  @@index([authorId, status, updatedAt])
+  @@index([status, visibility, publishedAt])
+  @@index([createdAt])
+  @@map("posts")
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  posts Post[]
+
+  @@map("subjects")
+}
+
+// ─────────────────────────────────────────────
+// COMMENTS
+// ─────────────────────────────────────────────
+
+model Comment {
+  id        String    @id @default(cuid())
+  userId    String
+  postId    String
+  parentId  String?
+  content   String    @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // A comment can have replies, which are also comments.
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// ─────────────────────────────────────────────
+// USER ↔ POST INTERACTIONS
+// ─────────────────────────────────────────────
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // A user can like a post only once.
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("likes")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // A user can bookmark a post only once.
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("bookmarks")
+}
+
+model ReadingHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  postId       String
+  lastPosition Int      @default(0)
+  lastReadAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // One history record per user per post; update it as they read.
+  @@unique([userId, postId])
+  @@index([userId, lastReadAt])
+  @@map("reading_history")
+}
+
+// ─────────────────────────────────────────────
+// POST VIEWS / ANALYTICS
+// ─────────────────────────────────────────────
+
+model PostView {
+  id       String   @id @default(cuid())
+  postId   String
+  userId   String?
+  viewedAt DateTime @default(now())
+
+  post Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId, viewedAt])
+  @@index([userId])
+  @@map("post_views")
 }
