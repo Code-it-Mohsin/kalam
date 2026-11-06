@@ -1,36 +1,18 @@
->> setup config
+UPNEXT
 
->> create routes
->> Link pages in Layout
+=> Creating API routes √
+  - Auth
+  - Other Endpoints
 
->> Fetch an Image from the internet to display as the banner, tip you'd have to add the hotname of the URL in next.config.ts
+=> Create client routes
 
->> create client component -- add to files "use client"
+=> Store and State management
 
->> props, Emits slots
+=> Testing and fixing all Endpoints
 
->> create Server Component == every element by default is a server component
-
->> useState
-
->> fetch data from an api
-
->> create a Server component and import a client component in the same route, the client does the click/ui part
-
->> get multiple user/item/something and create a page for each, if no user no found page
-
->> create a not-found.tsx page
-
->> create a loading state - error.tsx
-
->> create ui components that can be used in multiple places 
-
->> create lib folder and use it
-
->> create specific layout.tsx inside a subroute group
-
->> Built apis and use HTTP get, post, etc requests, route.ts, NextResponse 
-
->> Add meta data for every route
-
->> Add auth using JWT and jose
+=> Nodejs server 
+  - websockets chat
+  - live notifications
+  - live editing by multiple people
+  - Redis + BullMQ
+  - Image and Video uploads

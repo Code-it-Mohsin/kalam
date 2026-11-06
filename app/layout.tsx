@@ -1,14 +1,16 @@
-// app/layout.tsx
-import type { ReactNode } from "react";
+import Navbar from "@/components/layout/NavBar";
+import Footer from "@/components/layout/Footer";
 
-export default function RootLayout({
+export default function ClientLayout({
   children,
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <>
+      <Navbar />
+      <main className="min-h-[70vh]">{children}</main>
+      <Footer />
+    </>
   );
 }

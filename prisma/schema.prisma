@@ -3,6 +3,7 @@ generator client {
   output   = "../lib/generated/prisma"
 }
 
+
 datasource db {
   provider = "postgresql"
 }

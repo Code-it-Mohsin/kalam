@@ -30,6 +30,7 @@
     "eslint-config-next": "16.4.0",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
+    "tree-cli": "^0.6.7",
     "tsx": "^4.23.15",
     "typescript": "^5"
   },

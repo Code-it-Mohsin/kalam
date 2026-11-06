@@ -1,7 +1,17 @@
 export default function Home() {
   return (
     <div>
-      Hello, Let's Start
+      <h1>Root Home Page</h1>
+
+        {/* <Navbar />
+        <main>
+          <Hero />
+          <Categories />
+          <FeaturedBlogs />
+          <LatestBlogs />
+        </main>
+        <Footer /> */}
+
     </div>
   );
 }
